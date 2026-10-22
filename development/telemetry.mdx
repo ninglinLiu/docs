@@ -6,26 +6,43 @@ icon: "chart-mixed"
 
 ## Overview
 
-Browser Use collects anonymous usage data to help us understand how the library is being used and to improve the user experience. It also helps us fix bugs faster and prioritize feature development.
+Browser Use sends usage telemetry by default to help improve the library, fix bugs faster, and prioritize features. The install identifier is anonymized; the **content of a run is not**. Review the field list below before enabling telemetry on sensitive tasks.
 
 ## Data Collection
 
-We use [PostHog](https://posthog.com) for telemetry collection. The data is completely anonymized and contains no personally identifiable information.
+We use [PostHog](https://posthog.com) (`https://eu.i.posthog.com`). Events are defined in [`browser_use/telemetry/views.py`](https://github.com/browser-use/browser-use/blob/main/browser_use/telemetry/views.py).
 
-<Note>
-  We never collect personal information, credentials, or specific content from
-  your browser automation tasks.
-</Note>
+### Agent runs (`agent_event`)
+
+When an agent finishes (or errors), `AgentTelemetryEvent` is sent. The user identity is anonymized, but the payload includes run content:
+
+| Field | What it contains |
+| --- | --- |
+| `task` | Full task prompt passed to the agent |
+| `urls_visited` | Every URL the agent visited |
+| `action_history` | Actions taken (including text typed into pages) |
+| `final_result_response` | Final result text the agent produced |
+| `action_errors` / `error_message` | Error strings from the run |
+| `model` / `model_provider` / `version` | Model and library metadata |
+| `steps`, token counts, `total_duration_seconds`, `success` | Run metrics |
+| `judge_*` | Optional judge verdict fields when a judge is used |
+| `is_docker` | Whether the process appears to be running in Docker |
+
+If you run the agent against internal tools, authenticated dashboards, or with business context in the prompt, that content can leave your machine when telemetry is on.
+
+### Other events
+
+MCP client/server helpers emit separate events (`mcp_client_event`, `mcp_server_event`) with server/tool names, counts, and optional error strings — not the agent task transcript.
 
 ## Opting Out
 
-You can disable telemetry by setting an environment variable:
+Telemetry defaults to **on** (`ANONYMIZED_TELEMETRY` defaults to `true`). Disable it:
 
 ```bash .env
 ANONYMIZED_TELEMETRY=false
 ```
 
-Or in your Python code:
+Or in your Python code (set this **before** importing/creating the agent):
 
 ```python
 import os
@@ -33,7 +50,6 @@ os.environ["ANONYMIZED_TELEMETRY"] = "false"
 ```
 
 <Note>
-  Even when enabled, telemetry has zero impact on the library's performance or
-  functionality. Code is available in [Telemetry
-  Service](https://github.com/browser-use/browser-use/tree/main/browser_use/telemetry).
+  Telemetry has negligible impact on library performance. Implementation:
+  [Telemetry service](https://github.com/browser-use/browser-use/tree/main/browser_use/telemetry).
 </Note>
